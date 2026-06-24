@@ -1,77 +1,108 @@
 import pandas as pd
+import numpy as np
+import joblib
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
-from sklearn.preprocessing import LabelEncoder
+from imblearn.pipeline import Pipeline as ImbPipeline
+from imblearn.over_sampling import SMOTE
+import warnings
 
-def train_classifier(csv_path="feature_table.csv"):
-    # Read the data
-    df = pd.read_csv(csv_path)
-    
-    features = ['Period_days', 'Duration_hours', 'Depth', 'SNR', 'Odd_Even_Sigma']
-    X = df[features]
+warnings.filterwarnings('ignore')
+
+REQUIRED_FEATURES = [
+    'Period_days', 'Duration_hours', 'Depth', 'SNR', 'Odd_Even_Sigma',
+    'blend_probability', 'neighbor_count', 'bls_peak_power', 
+    'transit_symmetry_score', 'num_observed_transits'
+]
+
+def load_and_validate(csv_path="curated_dataset.csv"):
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        print(f"Error: {csv_path} not found.")
+        return None, None, None, None
+        
+    missing = [f for f in REQUIRED_FEATURES if f not in df.columns]
+    if missing:
+        print(f"Error: Missing required features: {missing}")
+        return None, None, None, None
+        
+    if 'Label' not in df.columns:
+        print("Error: 'Label' column missing.")
+        return None, None, None, None
+        
+    X = df[REQUIRED_FEATURES]
     y_raw = df['Label']
-    tic_ids = df['TIC_ID']
     
-    # Encode string labels to integers (XGBoost requirement)
     le = LabelEncoder()
     y = le.fit_transform(y_raw)
     
-    # Initialize and train the XGBoost classifier
-    model = xgb.XGBClassifier(
-        eval_metric='mlogloss', 
-        random_state=42, 
-        n_estimators=10, 
-        max_depth=2, 
-        reg_lambda=0.1,
-        min_child_weight=0
-    )
-    model.fit(X, y)
+    # Save test set for later evaluation
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
     
-    # Predict on the training set
-    predictions = model.predict(X)
-    probabilities = model.predict_proba(X)
+    # Save the test set and label encoder to disk
+    test_df = X_test.copy()
+    test_df['Label'] = y_test
+    test_df.to_csv("test_data.csv", index=False)
+    joblib.dump(le, "label_encoder.pkl")
     
-    # Decode predictions back to string labels
-    predicted_labels = le.inverse_transform(predictions)
-    
-    print("=" * 80)
-    print("IMPORTANT DISCLAIMER:")
-    print("This is a workflow demonstration trained on an extremely small sample (5 targets, 3 classes).")
-    print("This is NOT a validated model. The accuracy, probabilities, and feature importances")
-    print("reported here should NOT be interpreted as generalizable performance.")
-    print("=" * 80)
-    print()
-    
-    print("--- Training Set Predictions & Probabilities ---")
-    classes = le.classes_
-    print(f"Classes: {classes}")
-    for i in range(len(df)):
-        prob_str = ", ".join([f"{classes[j]}: {probabilities[i][j]:.4f}" for j in range(len(classes))])
-        print(f"Target: {tic_ids.iloc[i]}")
-        print(f"  True Label:      {y_raw.iloc[i]}")
-        print(f"  Predicted Label: {predicted_labels[i]}")
-        print(f"  Probabilities:   [{prob_str}]")
-        print()
+    return X_train, X_test, y_train, y_test
+
+def train():
+    X_train, X_test, y_train, y_test = load_and_validate()
+    if X_train is None:
+        return
         
-    print("--- Feature Importances ---")
-    importances = model.feature_importances_
-    for feat, imp in zip(features, importances):
-        print(f"{feat:16s}: {imp:.4f}")
+    print(f"Training set size: {len(X_train)}")
+    
+    # Define pipelines
+    rf_pipeline = ImbPipeline([
+        ('scaler', StandardScaler()),
+        ('smote', SMOTE(random_state=42)),
+        ('clf', RandomForestClassifier(random_state=42))
+    ])
+    
+    xgb_pipeline = ImbPipeline([
+        ('scaler', StandardScaler()),
+        ('smote', SMOTE(random_state=42)),
+        ('clf', xgb.XGBClassifier(eval_metric='mlogloss', random_state=42))
+    ])
+    
+    # Define hyperparameter grids
+    rf_param_grid = {
+        'clf__n_estimators': [100, 200],
+        'clf__max_depth': [10, 20, None],
+        'clf__min_samples_leaf': [1, 2, 4]
+    }
+    
+    xgb_param_grid = {
+        'clf__n_estimators': [100, 200],
+        'clf__max_depth': [3, 5, 7],
+        'clf__learning_rate': [0.01, 0.1, 0.2]
+    }
+    
+    print("Optimizing Random Forest...")
+    rf_search = RandomizedSearchCV(rf_pipeline, rf_param_grid, n_iter=5, cv=5, scoring='f1_macro', random_state=42, n_jobs=-1)
+    rf_search.fit(X_train, y_train)
+    print(f"Best RF Score: {rf_search.best_score_:.4f}")
+    
+    print("Optimizing XGBoost...")
+    xgb_search = RandomizedSearchCV(xgb_pipeline, xgb_param_grid, n_iter=5, cv=5, scoring='f1_macro', random_state=42, n_jobs=-1)
+    xgb_search.fit(X_train, y_train)
+    print(f"Best XGB Score: {xgb_search.best_score_:.4f}")
+    
+    # Compare and save best
+    if xgb_search.best_score_ > rf_search.best_score_:
+        best_model = xgb_search.best_estimator_
+        print("XGBoost performed best. Saving model.")
+    else:
+        best_model = rf_search.best_estimator_
+        print("Random Forest performed best. Saving model.")
         
-    print("\n" + "=" * 80)
-    print("CONCLUSION ON MODEL COMPLEXITY:")
-    print("With default hyperparameters, the model degenerated to predicting class-frequency")
-    print("priors due to the extremely small sample size and default safety constraints.")
-    print("After explicitly setting min_child_weight=0, the model successfully split on")
-    print("features (no longer degenerate) and perfectly classified all 5 training samples")
-    print("using only Period_days and Depth (importances 0.48 and 0.52).")
-    print("Duration_hours, SNR, and Odd_Even_Sigma received zero importance, likely because")
-    print("the shallow trees (max_depth=2) needed only 1-2 splits to separate 3 classes,")
-    print("not because those features are uninformative.")
-    print("\nPerfect classification on a training set with as many model parameters as data")
-    print("points is expected and does not constitute validated generalization performance.")
-    print("A larger labeled dataset would be needed to determine real feature importance")
-    print("and out-of-sample accuracy.")
-    print("=" * 80)
+    joblib.dump(best_model, "model.pkl")
+    print("Model saved to model.pkl")
 
 if __name__ == "__main__":
-    train_classifier()
+    train()
