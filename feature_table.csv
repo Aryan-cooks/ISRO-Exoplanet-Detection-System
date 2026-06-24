@@ -1,0 +1,6 @@
+TIC_ID,Period_days,Duration_hours,Depth,SNR,Odd_Even_Sigma,Label
+TIC_100100827,0.941,2.4,0.0076,602.58,6.63,transit
+TIC_150361911,1.2464,2.4,0.1543,440.09,2.15,eclipsing_binary
+TIC_283722336,3.0934,1.2,0.0001,13,0.91,transit
+TIC_38699825,1.0427,4.8,0.2128,592.43,21.33,eclipsing_binary
+TIC_55525572,8.009,2.4,0.0003,4.38,0.75,undetected_long_period
