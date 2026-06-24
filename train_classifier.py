@@ -14,7 +14,8 @@ warnings.filterwarnings('ignore')
 REQUIRED_FEATURES = [
     'Period_days', 'Duration_hours', 'Depth', 'SNR', 'Odd_Even_Sigma',
     'blend_probability', 'neighbor_count', 'bls_peak_power', 
-    'transit_symmetry_score', 'num_observed_transits'
+    'transit_symmetry_score', 'v_shape_score', 'u_shape_score',
+    'ingress_duration', 'egress_duration', 'num_observed_transits'
 ]
 
 def load_and_validate(csv_path="curated_dataset.csv"):

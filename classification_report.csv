@@ -1,0 +1,11 @@
+tic_id,predicted_class,transit_prob,binary_prob,blend_prob,other_prob,confidence_level
+TIC_150361911,Blend,0.0,0.4,0.57,0.03,LOW
+TIC_150361911,Blend,0.0,0.41,0.57,0.02,LOW
+TIC_100100827,Eclipsing Binary,0.05,0.74,0.12,0.09,MEDIUM
+TIC_100100827,Eclipsing Binary,0.07,0.69,0.16,0.08,LOW
+TIC_55525572,Other,0.0,0.0,0.08,0.92,HIGH
+TIC_55525572,Other,0.0,0.0,0.02,0.98,HIGH
+TIC_283722336,Blend,0.0,0.17,0.73,0.1,MEDIUM
+TIC_38699825,Eclipsing Binary,0.0,0.99,0.0,0.01,HIGH
+TIC_38699825,Eclipsing Binary,0.04,0.76,0.15,0.05,MEDIUM
+TIC_283722336,Other,0.0,0.08,0.41,0.51,LOW

@@ -1,0 +1,12 @@
+{
+    "total_targets_in_catalog": 10,
+    "successfully_processed": 10,
+    "errors": 0,
+    "class_breakdown": {
+        "Transit": 0,
+        "Eclipsing Binary": 4,
+        "Blend": 3,
+        "Other": 3
+    },
+    "processing_time": "0h 0m 19.14s"
+}

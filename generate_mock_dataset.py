@@ -27,6 +27,10 @@ def generate_mock_dataset(num_samples=1500, output_path="curated_dataset.csv"):
             neighbor_count = np.random.randint(0, 5)
             bls_power = np.random.uniform(50, 500)
             symmetry = np.random.uniform(0.8, 1.0)
+            v_shape = np.random.uniform(0.1, 0.3)
+            u_shape = 1.0 - v_shape
+            ingress = np.random.uniform(0.1, 0.5)
+            egress = ingress * np.random.uniform(0.9, 1.1)
             
         elif label == 'Eclipsing Binary':
             depth = np.random.uniform(0.05, 0.5)  # deep
@@ -37,6 +41,10 @@ def generate_mock_dataset(num_samples=1500, output_path="curated_dataset.csv"):
             neighbor_count = np.random.randint(0, 10)
             bls_power = np.random.uniform(100, 1000)
             symmetry = np.random.uniform(0.5, 0.9)
+            v_shape = np.random.uniform(0.7, 1.0)
+            u_shape = 1.0 - v_shape
+            ingress = np.random.uniform(0.5, 2.0)
+            egress = ingress * np.random.uniform(0.8, 1.2)
             
         elif label == 'Blend':
             depth = np.random.uniform(0.001, 0.1)
@@ -47,6 +55,10 @@ def generate_mock_dataset(num_samples=1500, output_path="curated_dataset.csv"):
             neighbor_count = np.random.randint(5, 50) # high
             bls_power = np.random.uniform(30, 300)
             symmetry = np.random.uniform(0.6, 0.9)
+            v_shape = np.random.uniform(0.3, 0.8)
+            u_shape = 1.0 - v_shape
+            ingress = np.random.uniform(0.3, 1.5)
+            egress = ingress * np.random.uniform(0.5, 1.5)
             
         else: # Other (noise/systematics)
             depth = np.random.uniform(0.0001, 0.005)
@@ -57,6 +69,10 @@ def generate_mock_dataset(num_samples=1500, output_path="curated_dataset.csv"):
             neighbor_count = np.random.randint(0, 30)
             bls_power = np.random.uniform(5, 40) # low
             symmetry = np.random.uniform(0.1, 0.7) # low
+            v_shape = np.random.uniform(0.0, 1.0)
+            u_shape = np.random.uniform(0.0, 1.0)
+            ingress = np.random.uniform(0.1, 3.0)
+            egress = np.random.uniform(0.1, 3.0)
             
         data.append({
             'TIC_ID': tic_id,
@@ -69,6 +85,10 @@ def generate_mock_dataset(num_samples=1500, output_path="curated_dataset.csv"):
             'neighbor_count': neighbor_count,
             'bls_peak_power': bls_power,
             'transit_symmetry_score': symmetry,
+            'v_shape_score': v_shape,
+            'u_shape_score': u_shape,
+            'ingress_duration': ingress,
+            'egress_duration': egress,
             'num_observed_transits': num_transits,
             'Label': label
         })

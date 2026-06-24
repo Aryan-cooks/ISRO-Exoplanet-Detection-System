@@ -1,0 +1,9 @@
+{
+    "sector": 2,
+    "target_limit_requested": 10,
+    "targets_discovered": 10,
+    "successful_downloads": 10,
+    "failed_downloads": 0,
+    "output_directory": "data/sector_2",
+    "total_download_time": "0h 0m 51.67s"
+}
