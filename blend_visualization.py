@@ -11,17 +11,12 @@ warnings.filterwarnings('ignore', module='astroquery.utils.commons')
 def calculate_flux(mag):
     return 10 ** (-0.4 * mag)
 
-def plot_blend_map(tic_str, search_radius_arcsec=63, output_dir="plots"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        
+def draw_blend_map(tic_str, ax, search_radius_arcsec=63):
     tic_num = int(tic_str.replace("TIC_", ""))
-    
-    print(f"Generating sky map for TIC {tic_num}...")
     try:
         target = Catalogs.query_criteria(catalog='Tic', ID=tic_num)
         if len(target) == 0:
-            print(f"Target TIC {tic_num} not found.")
+            ax.text(0.5, 0.5, f"Target TIC {tic_num} not found.", ha='center')
             return
             
         target_ra = target['ra'][0]
@@ -33,8 +28,6 @@ def plot_blend_map(tic_str, search_radius_arcsec=63, output_dir="plots"):
         target_flux = calculate_flux(target_mag)
         
         neighbors = Catalogs.query_region(f'{target_ra} {target_dec}', radius=search_radius_arcsec*u.arcsec, catalog='TIC')
-        
-        fig, ax = plt.subplots(figsize=(10, 10))
         
         # Plot target
         ax.scatter(target_ra, target_dec, s=300, marker='*', color='red', label=f'Target ({target_mag:.2f} mag)', zorder=10)
@@ -107,15 +100,23 @@ def plot_blend_map(tic_str, search_radius_arcsec=63, output_dir="plots"):
         ]
         ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(1.3, 1))
         
-        plt.tight_layout()
-        output_path = os.path.join(output_dir, f"{tic_str}_blend_map.png")
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        plt.close()
-        
-        print(f"Saved sky map to {output_path}")
-        
     except Exception as e:
-        print(f"Error generating plot for {tic_num}: {e}")
+        ax.text(0.5, 0.5, f"Error generating plot for {tic_num}: {e}", ha='center')
+
+def plot_blend_map(tic_str, search_radius_arcsec=63, output_dir="plots"):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        
+    fig, ax = plt.subplots(figsize=(10, 10))
+    print(f"Generating sky map for {tic_str}...")
+    draw_blend_map(tic_str, ax, search_radius_arcsec)
+    
+    plt.tight_layout()
+    output_path = os.path.join(output_dir, f"{tic_str}_blend_map.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Saved sky map to {output_path}")
 
 def main():
     df = pd.read_csv("feature_table.csv")

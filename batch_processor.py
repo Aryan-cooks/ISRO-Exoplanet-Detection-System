@@ -83,6 +83,12 @@ def compute_odd_even(lc, period, t0, duration_hours):
     return sigma
 
 def compute_transit_shape_features(lc, period, t0, duration_hours):
+    """
+    Computes shape-based features of the transit:
+    - symmetry_score: Compare area of ingress vs egress.
+    - ingress/egress_duration: Measured from 10% to 90% depth.
+    - v_shape/u_shape scores: Proxies for V-shaped (EB) or U-shaped (Transit) transits.
+    """
     # Phase fold
     folded_lc = lc.fold(period=period, epoch_time=t0)
     
@@ -311,9 +317,13 @@ def process_target(file_path):
         result['v_shape_score'] = v_score
         result['u_shape_score'] = u_score
         result['blend_probability'] = blend_prob
+        result['odd_even_sigma'] = odd_even_sigma
+        result['bls_peak_power'] = power
+        result['neighbor_count'] = neighbor_count
+        result['num_observed_transits'] = num_transits
         
         if classifier_model and label_encoder:
-            features = pd.DataFrame([{
+            feature_dict = {
                 'Period_days': period,
                 'Duration_hours': duration_hours,
                 'Depth': depth,
@@ -328,7 +338,15 @@ def process_target(file_path):
                 'ingress_duration': ing_dur,
                 'egress_duration': eg_dur,
                 'num_observed_transits': num_transits
-            }])
+            }
+            
+            # Feature validation step
+            missing_or_invalid = [k for k, v in feature_dict.items() if v is None or np.isnan(v)]
+            if missing_or_invalid:
+                print(f"Feature Validation Error on {tic_id}: Missing/Invalid features: {missing_or_invalid}")
+                raise ValueError(f"Missing required features: {missing_or_invalid}")
+                
+            features = pd.DataFrame([feature_dict])
             
             # Predict
             pred_probs = classifier_model.predict_proba(features)[0]

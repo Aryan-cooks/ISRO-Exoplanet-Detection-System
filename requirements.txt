@@ -1,0 +1,14 @@
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+scikit-learn
+xgboost
+imbalanced-learn
+lightkurve
+astroquery
+astropy
+joblib
+tqdm
+batman-package

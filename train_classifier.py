@@ -8,6 +8,8 @@ import xgboost as xgb
 from imblearn.pipeline import Pipeline as ImbPipeline
 from imblearn.over_sampling import SMOTE
 import warnings
+import json
+import os
 
 warnings.filterwarnings('ignore')
 
@@ -23,16 +25,22 @@ def load_and_validate(csv_path="curated_dataset.csv"):
         df = pd.read_csv(csv_path)
     except FileNotFoundError:
         print(f"Error: {csv_path} not found.")
-        return None, None, None, None
+        return None, None, None, None, None
+        
+    dataset_type = "real"
+    if 'TIC_ID' in df.columns and df['TIC_ID'].astype(str).str.contains('MOCK').any():
+        dataset_type = "synthetic"
+        print("WARNING: Synthetic dataset detected. Using mock data for training.")
         
     missing = [f for f in REQUIRED_FEATURES if f not in df.columns]
     if missing:
-        print(f"Error: Missing required features: {missing}")
-        return None, None, None, None
-        
+        print(f"WARNING: Missing required features: {missing}. Filling with 0 to prevent crash, but this will degrade performance.")
+        for col in missing:
+            df[col] = 0.0
+            
     if 'Label' not in df.columns:
-        print("Error: 'Label' column missing.")
-        return None, None, None, None
+        print("Error: 'Label' column missing. Cannot train without labels.")
+        return None, None, None, None, None
         
     X = df[REQUIRED_FEATURES]
     y_raw = df['Label']
@@ -49,10 +57,10 @@ def load_and_validate(csv_path="curated_dataset.csv"):
     test_df.to_csv("test_data.csv", index=False)
     joblib.dump(le, "label_encoder.pkl")
     
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test, dataset_type
 
 def train():
-    X_train, X_test, y_train, y_test = load_and_validate()
+    X_train, X_test, y_train, y_test, dataset_type = load_and_validate()
     if X_train is None:
         return
         
@@ -102,8 +110,22 @@ def train():
         best_model = rf_search.best_estimator_
         print("Random Forest performed best. Saving model.")
         
+    # Update metrics.json
+    metrics = {}
+    if os.path.exists("metrics.json"):
+        with open("metrics.json", "r") as f:
+            try:
+                metrics = json.load(f)
+            except json.JSONDecodeError:
+                pass
+                
+    metrics['dataset_type'] = dataset_type
+    with open("metrics.json", "w") as f:
+        json.dump(metrics, f, indent=4)
+        
     joblib.dump(best_model, "model.pkl")
     print("Model saved to model.pkl")
+    print(f"Metrics updated in metrics.json with dataset_type='{dataset_type}'")
 
 if __name__ == "__main__":
     train()
