@@ -1,14 +1,31 @@
-numpy
-pandas
-scipy
-matplotlib
-seaborn
-scikit-learn
-xgboost
-imbalanced-learn
-lightkurve
-astroquery
-astropy
-joblib
-tqdm
-batman-package
+# ============================================================
+# ISRO Exoplanet Detection System — Python Dependencies
+# Python >= 3.9 recommended
+# Install with: pip install -r requirements.txt
+# ============================================================
+
+# --- Core Scientific Stack ---
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# --- Astronomy / TESS Data ---
+lightkurve>=2.4.0          # TESS light curve download, BLS periodogram, detrending
+astropy>=5.3.0             # Units, time handling, FITS I/O
+astroquery>=0.4.6          # MAST catalog queries (blend_detector.py)
+
+# --- Transit Modelling ---
+batman-package>=2.4.9      # Transit light curve fitting (fit_batman.py)
+
+# --- Machine Learning ---
+scikit-learn>=1.3.0        # train/test split, StandardScaler, RandomForest, metrics
+xgboost>=2.0.0             # XGBoost classifier (train_classifier.py)
+imbalanced-learn>=0.11.0   # SMOTE oversampling (train_classifier.py)
+joblib>=1.3.0              # Model serialisation (.pkl files)
+
+# --- Visualisation ---
+matplotlib>=3.7.0          # All plots
+seaborn>=0.12.0            # Confusion matrix heatmap (evaluate_classifier.py)
+
+# --- Utilities ---
+tqdm>=4.65.0               # Progress bars (optional but useful for bulk runs)
